@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  MongoDBUri:
+    Type: String
+    Default: mongodb://localhost:27017/mlgmr
+    Description: MongoDB connection URI
+    NoEcho: true
+
+  RedisUri:
+    Type: String
+    Default: redis://localhost:6379
+    Description: Redis connection URI
+    NoEcho: true
+
+  LogLevel:
+    Type: String
+    Default: debug
+    AllowedValues:
+      - debug
+      - info
+      - warn
+      - error
+    Description: Logging level
+
+Resources:
+  MLGMRFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Timeout: 30
+      Environment:
+        Variables:
+          MONGODB_URI: !Ref MongoDBUri
+          REDIS_URI: !Ref RedisUri
+          LOG_LEVEL: !Ref LogLevel
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
