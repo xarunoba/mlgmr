@@ -1,4 +1,4 @@
-module github.com/xarunoba/mlgm
+module github.com/xarunoba/mlgmr
 
 go 1.25.1
 
