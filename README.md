@@ -10,15 +10,15 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 .
 ├── functions/                # Lambda functions directory
 │   └── greeter/              # Example function
-│       ├── main.go          # Function entry point
-│       ├── handler.go       # Function logic
+│       ├── main.go           # Function entry point
+│       ├── handler.go        # Function logic
 │       └── events/
-│           └── event.json   # Sample test event
-├── shared/                  # Shared code across functions
-│   ├── types.go             # Common types and structs
+│           └── event.json    # Sample test event
+├── shared/                   # Shared code across functions
+│   ├── types.go              # Common types and structs
 │   ├── db/
-│   │   ├── mongodb.go       # MongoDB client
-│   │   └── redis.go         # Redis client
+│   │   ├── mongodb.go        # MongoDB client
+│   │   └── redis.go          # Redis client
 │   └── middleware/
 │       └── logger.go         # Structured logging middleware (slog)
 ├── template.yaml             # SAM template for deployment
@@ -45,7 +45,7 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 git clone https://github.com/yourusername/your-repo-name
 cd your-repo-name
 
-# Rename samconfig template file
+# Rename samconfig template file to the default config file
 mv samconfig.template.toml samconfig.toml
 
 # Tidy up Go modules
