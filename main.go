@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/xarunoba/mlgm/handler"
-	"github.com/xarunoba/mlgm/middlewares"
+	"github.com/xarunoba/mlgmr/handler"
+	"github.com/xarunoba/mlgmr/middlewares"
 )
 
 func main() {

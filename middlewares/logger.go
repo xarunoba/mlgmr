@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/xarunoba/mlgm/handler"
+	"github.com/xarunoba/mlgmr/handler"
 )
 
 // Compile-time check to ensure Logger implements Middleware
