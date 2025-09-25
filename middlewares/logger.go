@@ -45,13 +45,13 @@ func GetLogger() *slog.Logger {
 }
 
 // Logger is a middleware that logs the input and output of the handler.
-// It wraps a handler.HandlerFunc and returns a new handler.HandlerFunc
+// It wraps a any and returns a new any
 // that logs the input before calling the original handler and logs the output
 // after the handler has been called.
 func Logger(next handler.HandlerFunc) handler.HandlerFunc {
 	logger := GetLogger()
 
-	return func(ctx context.Context, input handler.Input) (handler.Output, error) {
+	return func(ctx context.Context, input handler.Input) (*handler.Output, error) {
 		// Log the input with structured logging
 		logger.DebugContext(ctx, "Lambda invocation started",
 			slog.Any("input", input),

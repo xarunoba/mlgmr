@@ -4,13 +4,13 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   MongoDBUri:
     Type: String
-    Default: mongodb://localhost:27017/mlgmr
+    Default: mongodb://host.docker.internal:27017/mlgmr
     Description: MongoDB connection URI
     NoEcho: true
 
   RedisUri:
     Type: String
-    Default: redis://localhost:6379
+    Default: redis://host.docker.internal:6379
     Description: Redis connection URI
     NoEcho: true
 
