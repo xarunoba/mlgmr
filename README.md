@@ -174,6 +174,15 @@ Resources:
 ...
 ```
 
+> [!NOTE]
+> Make sure to rebuild and change the function name in the `sam local invoke` command and `Makefile` to match your function name in `template.yaml`.
+
+```
+build-YourFunction:
+	GOARCH=amd64 GOOS=linux go build -o ./bootstrap main.go
+	cp ./bootstrap $(ARTIFACTS_DIR)/.
+```
+
 ```bash
 sam build --use-container
 sam local invoke YourFunction -e events/event.json
