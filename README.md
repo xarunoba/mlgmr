@@ -9,21 +9,22 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 ```
 .
 ├── main.go                 # Entry point - Lambda startup
-├── go.mod
-├── go.sum
-├── README.md
 ├── db/                     # Database clients
 │   ├── mongodb.go          # MongoDB client
 │   └── redis.go            # Redis client
 ├── handler/
 │   └── handler.go          # Core Lambda function logic
-├── middlewares/            # Middlewares for the handler
+├── middlewares/
+|   ├── middlewares.go      # Declares the middleware type
 │   └── logger.go           # Structured logging middleware (slog)
-├── events/                 # Test events for local development
-│   └── event.json          # Sample test event
+├── events/
+│   └── event.json          # Sample test event for local testing
 ├── template.yaml           # SAM template for local testing & deployment
 ├── Makefile                # Makefile for AWS SAM build command
+├── go.mod
+├── go.sum
 ├── .gitignore
+├── README.md
 └── LICENSE
 
 ```
