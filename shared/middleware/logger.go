@@ -1,4 +1,4 @@
-package middlewares
+package middleware
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/xarunoba/mlgmr/handler"
+	"github.com/xarunoba/mlgmr/shared"
 )
 
-// Compile-time check to ensure Logger implements Middleware
-var _ Middleware = Logger
+// Compile-time check to ensure Logger implements MiddlewareFunc
+var _ shared.MiddlewareFunc[any, any] = Logger[any, any]
 
 var (
 	loggerInstance *slog.Logger
@@ -44,14 +44,14 @@ func GetLogger() *slog.Logger {
 	return loggerInstance
 }
 
-// Logger is a middleware that logs the input and output of the handler.
+// Logger is a middleware that logs the input and output of the shared.
 // It wraps a any and returns a new any
 // that logs the input before calling the original handler and logs the output
 // after the handler has been called.
-func Logger(next handler.HandlerFunc) handler.HandlerFunc {
+func Logger[TIn, TOut any](next shared.HandlerFunc[TIn, TOut]) shared.HandlerFunc[TIn, TOut] {
 	logger := GetLogger()
 
-	return func(ctx context.Context, input handler.Input) (*handler.Output, error) {
+	return func(ctx context.Context, input TIn) (TOut, error) {
 		// Log the input with structured logging
 		logger.DebugContext(ctx, "Lambda invocation started",
 			slog.Any("input", input),

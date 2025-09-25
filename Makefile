@@ -1,3 +1,4 @@
-build-MLGMRFunction:
-	GOARCH=amd64 GOOS=linux go build -o ./bootstrap main.go
-	cp ./bootstrap $(ARTIFACTS_DIR)/.
+# Defines the build command for GreeterFunction for `sam build`
+build-GreeterFunction:
+	GOARCH=amd64 GOOS=linux go build -o ./functions/greeter/bootstrap ./functions/greeter/main.go
+	cp ./functions/greeter/bootstrap $(ARTIFACTS_DIR)/.

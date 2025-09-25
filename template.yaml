@@ -4,19 +4,16 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   MongoDBUri:
     Type: String
-    Default: mongodb://host.docker.internal:27017/mlgmr
     Description: MongoDB connection URI
     NoEcho: true
 
   RedisUri:
     Type: String
-    Default: redis://host.docker.internal:6379
     Description: Redis connection URI
     NoEcho: true
 
   LogLevel:
     Type: String
-    Default: debug
     AllowedValues:
       - debug
       - info
@@ -25,7 +22,7 @@ Parameters:
     Description: Logging level
 
 Resources:
-  MLGMRFunction:
+  GreeterFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./

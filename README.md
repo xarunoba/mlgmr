@@ -1,6 +1,6 @@
 # mlgmr - micro lambda, go, mongodb, redis
 
-This is a GitHub template for creating micro Lambda functions using Go, MongoDB, and/or Redis. It provides a clean, modular architecture that's easy to customize and extend, with built-in support for local testing using AWS SAM.
+This is a GitHub template for creating micro Lambda functions using Go, MongoDB, and/or Redis. It provides a clean monorepository that's easy to customize and extend, with built-in support for local testing using AWS SAM.
 
 **🎯 Use this template**: Click "Use this template" button above to create a new repository from this template.
 
@@ -8,25 +8,27 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 
 ```
 .
-├── main.go                 # Entry point - Lambda startup
-├── db/                     # Database clients
-│   ├── mongodb.go          # MongoDB client
-│   └── redis.go            # Redis client
-├── handler/
-│   └── handler.go          # Core Lambda function logic
-├── middlewares/
-|   ├── middlewares.go      # Declares the middleware type
-│   └── logger.go           # Structured logging middleware (slog)
-├── events/
-│   └── event.json          # Sample test event for local testing
-├── template.yaml           # SAM template for local testing & deployment
-├── Makefile                # Makefile for AWS SAM build command
+├── functions/                # Lambda functions directory
+│   └── greeter/              # Example function
+│       ├── main.go          # Function entry point
+│       ├── handler.go       # Function logic
+│       └── events/
+│           └── event.json   # Sample test event
+├── shared/                  # Shared code across functions
+│   ├── types.go             # Common types and structs
+│   ├── db/
+│   │   ├── mongodb.go       # MongoDB client
+│   │   └── redis.go         # Redis client
+│   └── middleware/
+│       └── logger.go         # Structured logging middleware (slog)
+├── template.yaml             # SAM template for deployment
+├── samconfig.template.toml   # SAM configuration template (rename to samconfig.toml)
+├── Makefile                  # Build commands
 ├── go.mod
 ├── go.sum
 ├── .gitignore
 ├── README.md
 └── LICENSE
-
 ```
 
 ## Prerequisites
@@ -39,23 +41,28 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 1. **Create from template**:
   - Click "Use this template" button above
   - Clone your new repository locally
-
 ```bash
 git clone https://github.com/yourusername/your-repo-name
 cd your-repo-name
+
+# Rename samconfig template file
+mv samconfig.template.toml samconfig.toml
+
+# Tidy up Go modules
 go mod tidy
 ```
+  - Rename the `module` name in `go.mod` and all the import paths in the project files.
 
 2. **Configure Environment Variables**:
-  - Edit `template.yaml` to set your MongoDB and Redis connection strings, and logging level.
+  - Edit `samconfig.toml` to set your MongoDB and Redis connection strings, and logging level.
 
 3. **Local Testing**:
 ```bash
 # Use a Docker container for building the function (recommended for runtime compatibility)
 sam build --use-container
 
-# Invoke directly with test event
-sam local invoke MLGMRFunction -e events/event.json
+# Invoke GreeterFunction directly with test event
+sam local invoke GreeterFunction -e ./functions/greeter/events/event.json
 ```
 
 4. **Deploy to AWS**:
@@ -69,128 +76,7 @@ sam deploy
 
 ## Usage Examples
 
-### Using MongoDB
-
-```go
-func LambdaFunction(ctx context.Context, input Input) (Output, error) {
-    client, err := db.GetMongoClient()
-    if err != nil {
-        return Output{}, fmt.Errorf("MongoDB connection failed: %w", err)
-    }
-
-    database := client.Database("myapp")
-    collection := database.Collection("users")
-
-    // Your MongoDB operations here
-    // ...
-
-    return Output{}, nil
-}
-```
-
-### Using Redis
-
-```go
-func LambdaFunction(ctx context.Context, input Input) (Output, error) {
-    client, err := db.GetRedisClient()
-    if err != nil {
-        return Output{}, fmt.Errorf("Redis connection failed: %w", err)
-    }
-
-    // Set a value
-    err = client.Set(ctx, "key", "value", time.Hour).Err()
-    if err != nil {
-        return Output{}, err
-    }
-
-    // Get a value
-    val, err := client.Get(ctx, "key").Result()
-    if err != nil {
-        return Output{}, err
-    }
-
-    return Output{Data: val}, nil
-}
-```
-
-## Customization Guide
-
-### 1. Modify Handler
-
-Edit `handler/handler.go` according to your needs:
-
-```go
-type Input struct {
-    UserID string `json:"user_id"`
-    Action string `json:"action"`
-}
-
-// Adjust the handler function signature if needed
-type HandlerFunc func(ctx context.Context, input Input) (error)
-
-func LambdaFunction(ctx context.Context, input Input) (error) {
-	// Your logic here
-	return nil
-}
-```
-
-### 2. Add New Middleware
-
-Create new middleware in `middlewares/`:
-
-```go
-// middlewares/auth.go
-func Auth(next handler.HandlerFunc) handler.HandlerFunc {
-    return func(ctx context.Context, input handler.Input) (handler.Output, error) {
-        // Authentication logic here
-        return next(ctx, input)
-    }
-}
-```
-
-Then apply it in `main.go`:
-
-```go
-wrappedHandler := middlewares.Auth(middlewares.Logger(handler.LambdaFunction))
-```
-
-### 3. Modify `template.yaml`
-
-Update the `template.yaml` file to adjust your Lambda function's configuration:
-
-```yaml
-...
-Resources:
-  YourFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      MemorySize: 256
-      Timeout: 10
-      Environment:
-        Variables:
-          MONGODB_URI: "your-mongodb-uri"
-          REDIS_ADDR: "your-redis-address"
-          LOG_LEVEL: "INFO"
-...
-```
-
-> [!NOTE]
-> Make sure to rebuild and change the function name in the `sam local invoke` command and `Makefile` to match your function name in `template.yaml`.
-
-```
-build-YourFunction:
-	GOARCH=amd64 GOOS=linux go build -o ./bootstrap main.go
-	cp ./bootstrap $(ARTIFACTS_DIR)/.
-```
-
-```bash
-sam build --use-container
-sam local invoke YourFunction -e events/event.json
-```
-
-### 4. Remove Unused Components
-
-Remove unused files and dependencies to keep the project clean. Don't forget to perform `go mod tidy` and update `template.yaml` after making changes.
+- Refer to the [GreeterFunction](./functions/greeter/main.go) for a simple example of handling an event, connecting to MongoDB and Redis, and using middleware for structured logging.
 
 ## License
 

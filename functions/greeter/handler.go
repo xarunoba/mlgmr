@@ -1,37 +1,32 @@
-package handler
+package main
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/xarunoba/mlgmr/db"
+	"github.com/xarunoba/mlgmr/shared"
+	"github.com/xarunoba/mlgmr/shared/db"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // Compile-time check to ensure LambdaFunction implements HandlerFunc
-var _ HandlerFunc = LambdaFunction
-
-// HandlerFunc defines the function signature for the Lambda handler.
-// Change this if you want to use a different signature for your LambdaFunction.
-// Refer to https://pkg.go.dev/github.com/aws/aws-lambda-go/lambda#Start for more details.
-type HandlerFunc func(ctx context.Context, input Input) (*Output, error)
+var _ shared.HandlerFunc[Input, *Output] = LambdaFunction
 
 // Input represents the input structure for the Lambda function. (The Event)
 type Input struct {
-	// Define your input fields here
 	Name string `json:"name"`
 }
 
 // Output represents the output structure for the Lambda function.
 type Output struct {
-	// Define your output fields here
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-type NameDocument struct {
+// nameDocument represents a document in the MongoDB "name" collection.
+type nameDocument struct {
 	Name      string `bson:"name"`
 	CreatedAt int64  `bson:"createdAt"`
 }
@@ -42,6 +37,7 @@ func LambdaFunction(ctx context.Context, input Input) (*Output, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Use (or create) the "mlgmr" database and "name" collection
 	mongoCollection := mongoClient.Database("mlgmr").Collection("name")
 
 	redisClient, err := db.GetRedisClient()
@@ -49,11 +45,11 @@ func LambdaFunction(ctx context.Context, input Input) (*Output, error) {
 		return nil, err
 	}
 
-	var doc NameDocument
+	var doc nameDocument
 	if check := mongoCollection.FindOne(ctx, bson.M{
 		"name": input.Name,
 	}); check.Err() == mongo.ErrNoDocuments {
-		_, err := mongoCollection.InsertOne(ctx, NameDocument{
+		_, err := mongoCollection.InsertOne(ctx, nameDocument{
 			Name:      input.Name,
 			CreatedAt: time.Now().UnixMilli(),
 		})
@@ -69,6 +65,7 @@ func LambdaFunction(ctx context.Context, input Input) (*Output, error) {
 	}
 	createdAt := time.UnixMilli(doc.CreatedAt).Format("January 2, 2006 at 3:04 PM MST")
 
+	// Increment the counter in Redis for the given name
 	counterKey := fmt.Sprintf("counter:%s", input.Name)
 	counter, err := redisClient.Incr(ctx, counterKey).Result()
 	if err != nil {

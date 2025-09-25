@@ -28,6 +28,7 @@ lambda-function.zip
 # SAM configuration with production secrets
 samconfig.toml
 samconfig.*.toml
+!samconfig.template.toml
 
 # IDE files
 .vscode/

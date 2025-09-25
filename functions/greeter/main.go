@@ -2,13 +2,12 @@ package main
 
 import (
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/xarunoba/mlgmr/handler"
-	"github.com/xarunoba/mlgmr/middlewares"
+	"github.com/xarunoba/mlgmr/shared/middleware"
 )
 
 func main() {
 	// Wrap the LambdaFunction with the Logger middleware
-	wrappedHandler := middlewares.Logger(handler.LambdaFunction)
+	wrappedHandler := middleware.Logger(LambdaFunction)
 
 	// Start the Lambda with the wrapped handler
 	lambda.Start(wrappedHandler)

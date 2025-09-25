@@ -1,0 +1,19 @@
+# This is an example configuration file for AWS SAM CLI
+# Rename this file to samconfig.toml and update the values as needed
+version = 0.1
+
+# Configuration for 'sam local invoke' command with default profile
+[default.local_invoke.parameters]
+parameter_overrides = [
+    "MongoDBUri=mongodb://host.docker.internal:27017/mlgmr",
+    "RedisUri=redis://host.docker.internal:6379",
+    "LogLevel=debug"
+]
+
+# Configuration for 'sam local start-api' command with default profile
+[default.local_start_api.parameters]
+parameter_overrides = [
+    "MongoDBUri=mongodb://host.docker.internal:27017/mlgmr",
+    "RedisUri=redis://host.docker.internal:6379",
+    "LogLevel=debug"
+]
