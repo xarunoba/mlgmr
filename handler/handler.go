@@ -2,6 +2,9 @@ package handler
 
 import "context"
 
+// Compile-time check to ensure LambdaFunction implements HandlerFunc
+var _ HandlerFunc = LambdaFunction
+
 // Input represents the input structure for the Lambda function. (The Event)
 type Input struct {
 	// Define your input fields here

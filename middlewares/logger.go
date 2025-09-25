@@ -9,6 +9,9 @@ import (
 	"github.com/xarunoba/mlgm/handler"
 )
 
+// Compile-time check to ensure Logger implements Middleware
+var _ Middleware = Logger
+
 var (
 	loggerInstance *slog.Logger
 	loggerOnce     sync.Once
