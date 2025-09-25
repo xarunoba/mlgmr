@@ -52,7 +52,7 @@ mv samconfig.template.toml samconfig.toml
 go mod tidy
 ```
   - Rename the `module` name in `go.mod` and all the import paths in the project files.
-
+  - Change LICENSE file (remove my name, add yours).
 2. **Configure Environment Variables**:
   - Edit `samconfig.toml` to set your MongoDB and Redis connection strings, and logging level.
 
