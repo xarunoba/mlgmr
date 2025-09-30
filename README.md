@@ -35,6 +35,7 @@ This is a GitHub template for creating micro Lambda functions using Go, MongoDB,
 - [Go](https://golang.org/dl/) (version 1.25.1 or later)
 - [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
 - [Docker](https://www.docker.com/get-started) (for local testing with SAM)
+- MongoDB and Redis running locally for testing.
 
 ## Quick Start
 

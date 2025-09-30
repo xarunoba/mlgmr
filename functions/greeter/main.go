@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	// Wrap the LambdaFunction with the Logger middleware
+	// Wrap the lambdaFn with the Logger middleware
 	wrappedHandler := middleware.Logger(LambdaFunction)
 
 	// Start the Lambda with the wrapped handler
