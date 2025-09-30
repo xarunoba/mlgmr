@@ -5,67 +5,66 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
-	client            *mongo.Client
-	clientOnce        sync.Once
-	clientErr         error
-	clientInitialized bool
-	mu                sync.Mutex
+	mongoClient *mongo.Client
+	mongoMutex  sync.Mutex
+)
+
+const (
+	connectionTimeout = 10 * time.Second
+	pingTimeout       = 5 * time.Second
 )
 
 // GetMongoClient returns a singleton MongoDB client instance optimized for AWS Lambda.
 // It reads the MongoDB URI from the MONGODB_URI environment variable.
-// If the connection fails, it resets the singleton to allow retries on subsequent calls.
 // The client persists across Lambda invocations for connection reuse.
+// Automatically handles health checking and reconnection transparently.
 func GetMongoClient() (*mongo.Client, error) {
-	clientOnce.Do(func() {
-		uri := os.Getenv("MONGODB_URI")
-		if uri == "" {
-			clientErr = fmt.Errorf("MONGODB_URI environment variable not set")
-			return
-		}
+	mongoMutex.Lock()
+	defer mongoMutex.Unlock()
 
-		client, clientErr = mongo.Connect(options.Client().ApplyURI(uri))
-		if clientErr != nil {
-			return
-		}
+	// If we have a client, check if it's still healthy
+	if mongoClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+		defer cancel()
 
-		clientErr = client.Ping(context.Background(), nil)
-		if clientErr != nil {
-			client = nil
-			return
-		}
-
-		clientInitialized = true
-	})
-
-	if clientErr != nil {
-		resetMongoDBClient()
-		return nil, clientErr
-	}
-
-	if client != nil && clientInitialized {
-		if err := client.Ping(context.Background(), nil); err != nil {
-			resetMongoDBClient()
-			return nil, err
+		if err := mongoClient.Ping(ctx, nil); err != nil {
+			// Client is unhealthy, disconnect and reset
+			mongoClient.Disconnect(context.Background())
+			mongoClient = nil
+		} else {
+			// Client is healthy, return it
+			return mongoClient, nil
 		}
 	}
 
-	return client, nil
-}
+	// Need to create new client
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		return nil, fmt.Errorf("MONGODB_URI environment variable not set")
+	}
 
-// resetMongoDBClient safely resets the singleton to allow retry on next call
-func resetMongoDBClient() {
-	mu.Lock()
-	defer mu.Unlock()
+	// Create connection
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
+	}
 
-	client = nil
-	clientErr = nil
-	clientInitialized = false
-	clientOnce = sync.Once{}
+	// Verify connection with ping
+	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	defer cancel()
+
+	if err := client.Ping(ctx, nil); err != nil {
+		client.Disconnect(context.Background())
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
+	}
+
+	mongoClient = client
+	return mongoClient, nil
 }

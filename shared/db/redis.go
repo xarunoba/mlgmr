@@ -5,69 +5,71 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 var (
-	redisClient      *redis.Client
-	redisOnce        sync.Once
-	redisErr         error
-	redisInitialized bool
-	redisMu          sync.Mutex
+	redisClient *redis.Client
+	redisMutex  sync.Mutex
+)
+
+const (
+	redisConnectionTimeout = 10 * time.Second
+	redisPingTimeout       = 5 * time.Second
 )
 
 // GetRedisClient returns a singleton Redis client instance optimized for AWS Lambda.
 // It reads the Redis URI from the REDIS_URI environment variable.
-// If the connection fails, it resets the singleton to allow retries on subsequent calls.
 // The client persists across Lambda invocations for connection reuse.
+// Automatically handles health checking and reconnection transparently.
 func GetRedisClient() (*redis.Client, error) {
-	redisOnce.Do(func() {
-		uri := os.Getenv("REDIS_URI")
-		if uri == "" {
-			redisErr = fmt.Errorf("REDIS_URI environment variable not set")
-			return
-		}
+	redisMutex.Lock()
+	defer redisMutex.Unlock()
 
-		opt, err := redis.ParseURL(uri)
-		if err != nil {
-			redisErr = fmt.Errorf("failed to parse REDIS_URI: %w", err)
-			return
-		}
+	// If we have a client, check if it's still healthy
+	if redisClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
+		defer cancel()
 
-		redisClient = redis.NewClient(opt)
-
-		_, redisErr = redisClient.Ping(context.Background()).Result()
-		if redisErr != nil {
+		if _, err := redisClient.Ping(ctx).Result(); err != nil {
+			// Client is unhealthy, close and reset
+			redisClient.Close()
 			redisClient = nil
-			return
-		}
-
-		redisInitialized = true
-	})
-
-	if redisErr != nil {
-		resetRedisClient()
-		return nil, redisErr
-	}
-
-	if redisClient != nil && redisInitialized {
-		if _, err := redisClient.Ping(context.Background()).Result(); err != nil {
-			resetRedisClient()
-			return nil, err
+		} else {
+			// Client is healthy, return it
+			return redisClient, nil
 		}
 	}
 
+	// Need to create new client
+	uri := os.Getenv("REDIS_URI")
+	if uri == "" {
+		return nil, fmt.Errorf("REDIS_URI environment variable not set")
+	}
+
+	opt, err := redis.ParseURL(uri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse REDIS_URI: %w", err)
+	}
+
+	// Set connection timeouts
+	opt.DialTimeout = redisConnectionTimeout
+	opt.ReadTimeout = redisPingTimeout
+	opt.WriteTimeout = redisPingTimeout
+
+	client := redis.NewClient(opt)
+
+	// Verify connection with ping
+	ctx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
+	defer cancel()
+
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("failed to ping Redis: %w", err)
+	}
+
+	redisClient = client
 	return redisClient, nil
-}
-
-// resetRedisClient safely resets the singleton to allow retry on next call
-func resetRedisClient() {
-	redisMu.Lock()
-	defer redisMu.Unlock()
-
-	redisClient = nil
-	redisErr = nil
-	redisInitialized = false
-	redisOnce = sync.Once{}
 }
