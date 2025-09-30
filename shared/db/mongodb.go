@@ -16,11 +16,6 @@ var (
 	mongoMutex  sync.Mutex
 )
 
-const (
-	connectionTimeout = 10 * time.Second
-	pingTimeout       = 5 * time.Second
-)
-
 // GetMongoClient returns a singleton MongoDB client instance optimized for AWS Lambda.
 // It reads the MongoDB URI from the MONGODB_URI environment variable.
 // The client persists across Lambda invocations for connection reuse.
@@ -31,7 +26,7 @@ func GetMongoClient() (*mongo.Client, error) {
 
 	// If we have a client, check if it's still healthy
 	if mongoClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if err := mongoClient.Ping(ctx, nil); err != nil {
@@ -57,7 +52,7 @@ func GetMongoClient() (*mongo.Client, error) {
 	}
 
 	// Verify connection with ping
-	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := client.Ping(ctx, nil); err != nil {

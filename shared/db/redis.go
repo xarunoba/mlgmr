@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -13,11 +12,6 @@ import (
 var (
 	redisClient *redis.Client
 	redisMutex  sync.Mutex
-)
-
-const (
-	redisConnectionTimeout = 10 * time.Second
-	redisPingTimeout       = 5 * time.Second
 )
 
 // GetRedisClient returns a singleton Redis client instance optimized for AWS Lambda.
@@ -30,10 +24,7 @@ func GetRedisClient() (*redis.Client, error) {
 
 	// If we have a client, check if it's still healthy
 	if redisClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
-		defer cancel()
-
-		if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		if _, err := redisClient.Ping(context.Background()).Result(); err != nil {
 			// Client is unhealthy, close and reset
 			redisClient.Close()
 			redisClient = nil
@@ -54,18 +45,12 @@ func GetRedisClient() (*redis.Client, error) {
 		return nil, fmt.Errorf("failed to parse REDIS_URI: %w", err)
 	}
 
-	// Set connection timeouts
-	opt.DialTimeout = redisConnectionTimeout
-	opt.ReadTimeout = redisPingTimeout
-	opt.WriteTimeout = redisPingTimeout
+	// Use Redis client defaults for connection timeouts
 
 	client := redis.NewClient(opt)
 
 	// Verify connection with ping
-	ctx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
-	defer cancel()
-
-	if _, err := client.Ping(ctx).Result(); err != nil {
+	if _, err := client.Ping(context.Background()).Result(); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to ping Redis: %w", err)
 	}

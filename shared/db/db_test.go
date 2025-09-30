@@ -556,16 +556,6 @@ func TestGetRedisClient_MultipleReconnectAttempts(t *testing.T) {
 	}
 }
 
-// Constants Tests
-
-func TestMongoConstants(t *testing.T) {
-	t.Log("MongoDB constants are tested indirectly through timeout behavior")
-}
-
-func TestRedisConstants(t *testing.T) {
-	t.Log("Redis constants are tested indirectly through timeout behavior")
-}
-
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
