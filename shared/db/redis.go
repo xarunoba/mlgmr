@@ -10,16 +10,17 @@ import (
 )
 
 var (
-	redisInstance *redis.Client
-	redisOnce     sync.Once
-	redisErr      error
-	redisMu       sync.Mutex
+	redisClient      *redis.Client
+	redisOnce        sync.Once
+	redisErr         error
+	redisInitialized bool
+	redisMu          sync.Mutex
 )
 
-// GetRedisClient returns a singleton Redis client instance.
+// GetRedisClient returns a singleton Redis client instance optimized for AWS Lambda.
 // It reads the Redis URI from the REDIS_URI environment variable.
 // If the connection fails, it resets the singleton to allow retries on subsequent calls.
-// The client is safe for concurrent use by multiple goroutines.
+// The client persists across Lambda invocations for connection reuse.
 func GetRedisClient() (*redis.Client, error) {
 	redisOnce.Do(func() {
 		uri := os.Getenv("REDIS_URI")
@@ -34,19 +35,39 @@ func GetRedisClient() (*redis.Client, error) {
 			return
 		}
 
-		redisInstance = redis.NewClient(opt)
+		redisClient = redis.NewClient(opt)
 
-		_, redisErr = redisInstance.Ping(context.Background()).Result()
+		_, redisErr = redisClient.Ping(context.Background()).Result()
+		if redisErr != nil {
+			redisClient = nil
+			return
+		}
+
+		redisInitialized = true
 	})
 
 	if redisErr != nil {
-		redisMu.Lock()
-		if redisErr != nil {
-			redisOnce = sync.Once{}
-			redisInstance = nil
-		}
-		redisMu.Unlock()
+		resetRedisClient()
+		return nil, redisErr
 	}
 
-	return redisInstance, redisErr
+	if redisClient != nil && redisInitialized {
+		if _, err := redisClient.Ping(context.Background()).Result(); err != nil {
+			resetRedisClient()
+			return nil, err
+		}
+	}
+
+	return redisClient, nil
+}
+
+// resetRedisClient safely resets the singleton to allow retry on next call
+func resetRedisClient() {
+	redisMu.Lock()
+	defer redisMu.Unlock()
+
+	redisClient = nil
+	redisErr = nil
+	redisInitialized = false
+	redisOnce = sync.Once{}
 }
